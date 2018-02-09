@@ -33,14 +33,20 @@ wpd.download = (function() {
         }
     }
 
+    const formatMimeMapping = {
+        "json":"application/json",
+        "tsv":"text/tab-separated-values",
+        "csv":"text/comma-separated-values"
+    };
     function textFileLocal(data, filename) {
+        let nameParts=filename.split(".");
+        let ext=nameParts[nameParts.length - 1];
         let $downloadElem = document.createElement('a');
-        $downloadElem.href = URL.createObjectURL(new Blob([data]), {type:"text/plain"});
+        $downloadElem.href = URL.createObjectURL(new Blob([data]), {type:formatMimeMapping[ext.toLowerCase()]});
         $downloadElem.download = stripIllegalCharacters(filename);
         $downloadElem.style.display = "none";
-        document.body.appendChild($downloadElem);
-        $downloadElem.click();
-        document.body.removeChild($downloadElem);
+        $downloadElem.dispatchEvent(new MouseEvent("click"));
+        URL.revokeObjectURL($downloadElem.href);
     }
 
     function textFileServer(data, filename) {

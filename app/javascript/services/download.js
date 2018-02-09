@@ -22,17 +22,60 @@
 var wpd = wpd || {};
 
 wpd.download = (function() {
-
     function textFile(data, filename) {
+        if (wpd.browserInfo.downloadAttributeSupported) {
+            textFileLocal(data, filename);
+        } else {
+            textFileServer(data, filename);
+        }
+    }
+
+    const formatMimeMapping = {
+        "json":"application/json",
+        "tsv":"text/tab-separated-values",
+        "csv":"text/comma-separated-values"
+    };
+    function textFileLocal(data, filename) {
+        let nameParts=filename.split(".");
+        let ext=nameParts[nameParts.length - 1];
         let $downloadElem = document.createElement('a');
         $downloadElem.href = URL.createObjectURL(new Blob([data]), {
-            type: "text/plain"
+            type:formatMimeMapping[ext.toLowerCase()]
         });
         $downloadElem.download = stripIllegalCharacters(filename);
         $downloadElem.style.display = "none";
-        document.body.appendChild($downloadElem);
-        $downloadElem.click();
-        document.body.removeChild($downloadElem);
+        $downloadElem.dispatchEvent(new MouseEvent("click"));
+        URL.revokeObjectURL($downloadElem.href);
+    }
+
+    function textFileServer(data, filename) {
+        var formContainer, formElement, formData, formFilename, jsonData = data;
+
+        // Create a hidden form and submit
+        formContainer = document.createElement('div');
+        formElement = document.createElement('form');
+        formData = document.createElement('textarea');
+        formFilename = document.createElement('input');
+        formFilename.type = 'hidden';
+
+        formElement.setAttribute('method', 'post');
+        formElement.setAttribute('action', 'download/text');
+
+        formData.setAttribute('name', "data");
+        formData.setAttribute('id', "data");
+        formFilename.setAttribute('name', 'filename');
+        formFilename.setAttribute('id', 'filename');
+        formFilename.value = stripIllegalCharacters(filename);
+
+        formElement.appendChild(formData);
+        formElement.appendChild(formFilename);
+        formContainer.appendChild(formElement);
+        document.body.appendChild(formContainer);
+        formContainer.style.display = 'none';
+
+        formData.innerHTML = jsonData;
+        formElement.submit();
+        document.body.removeChild(formContainer);
     }
 
     function json(jsonData, filename) {
